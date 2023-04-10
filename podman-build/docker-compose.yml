@@ -1,0 +1,19 @@
+version: "3.9"
+
+networks:
+  host-bridge-net:
+    driver: bridge
+
+services:
+  patches-backend:
+    container_name: simulateqcd
+    image: simulateqcd/simulateqcd:latest
+    build:
+      dockerfile: podman-build/Dockerfile
+    networks:
+      - host-bridge-net
+    environment:
+      - PORT=9000
+    profiles:
+      - core
+    command: /bin/bash
