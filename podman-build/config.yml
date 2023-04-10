@@ -1,0 +1,14 @@
+# Example YAML Configuration File
+
+# This sets the version of the OS *in the container*. This does not need to match
+# the target computer. The primary reason for changing this is to allow the use
+# of older verisons of the CUDA toolkit. Older toolkits are only available on
+# older operating systems.
+RHEL_VERSION: 9
+
+# This controls the number of threads that the build will spawn. It is used as
+# follows, `make -j ${CORES}`
+CORES: 4
+
+# This is the CUDA version that is used for the build.
+CUDA_VERSION: 12.1.0

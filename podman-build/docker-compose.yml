@@ -5,15 +5,13 @@ networks:
     driver: bridge
 
 services:
-  patches-backend:
+  simulateqcd:
     container_name: simulateqcd
     image: simulateqcd/simulateqcd:latest
     build:
       dockerfile: podman-build/Dockerfile
+      env_file: .env
     networks:
       - host-bridge-net
-    environment:
-      - PORT=9000
-    profiles:
-      - core
+    env_file: .env
     command: /bin/bash

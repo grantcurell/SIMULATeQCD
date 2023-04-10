@@ -14,11 +14,11 @@ if [[ $# -eq 0 ]] ; then
     exit 0
 fi
 
-touch $topdir/podman-build/container-info-redpanda-automation-server.txt 
+touch $topdir/podman-build/container-info-simulateqcd.txt 
 
 check_redpanda_is_running() { # TODO - do I need this?
-  if [[ -z $(docker inspect --format '{{.State.Running}}' redpanda-automation-server | grep -i true) ]]; then
-      echo  "It appears that the redpanda-automation-server container is not running. Make sure you have first run 'redpanda setup' before running this command. This command uses 'docker inspect --format '{{.State.Running}}' redpanda-automation-server | grep -i true' to test Redpanda's status."
+  if [[ -z $(docker inspect --format '{{.State.Running}}' simulateqcd | grep -i true) ]]; then
+      echo  "It appears that the simulateqcd container is not running. Make sure you have first run 'redpanda setup' before running this command. This command uses 'docker inspect --format '{{.State.Running}}' simulateqcd | grep -i true' to test Redpanda's status."
       exit 1
   fi
 }
@@ -70,7 +70,6 @@ testvercomp () {
     fi
 }
 
-PROFILE_ARG="--profile core"
 BUILD_ARG=
 DETACH_ARG="-d"
 DEBUG_ARG=""
@@ -118,12 +117,6 @@ while [[ $# -gt 0 ]]; do
     --build)
       BUILD_ARG="--build --remove-orphans"
       ;;
-    # Right now I have left profiles present in case we decide to add containers. 
-    # However, the functionality is currently vestigial.
-    #--redpanda-automation-server)
-    #  PROFILE_ARG="$PROFILE_ARG --profile redpanda-automation-server"
-    #  REDPANDA_AUTOMATION_SERVER=1
-    #  ;;
     --detach)
       DETACH_ARG="-d"
       ;;
@@ -138,9 +131,6 @@ while [[ $# -gt 0 ]]; do
       # package.json will have to be present in the server directory to function correctly
       cp package.json server
       cp -R migrations server
-      #DEBUG_ARG='-v server:/home/node/app -p 9229:9229' TODO - get rid of this stuff
-      #DEBUG_ENV=DEBUG=\'nodemon --inspect=0.0.0.0:9229 --watch /home/node/app\'
-      PROFILE_ARG="--profile debug"
       ;;
     --)
       shift
@@ -180,30 +170,33 @@ fi
 testvercomp $(docker-compose --version | cut -d ' ' -f 4 | sed 's/^v//') 2.2.0 '>'
 set -e
 
-# make container user UID match calling user so that containers dont leave droppings we cant remove
+# Make container user UID match calling user so that containers dont leave droppings we cant remove
 > $topdir/.env
 echo "USER_ID=$(id -u)" >> $topdir/.env
 echo "GROUP_ID=$(id -g)" >> $topdir/.env
 
+# Set the username and groupname
+echo "USERNAME=simulateqcd" >> $topdir/.env
+echo "GROUPNAME=simulateqcd" >> $topdir/.env
+
+# Check how many physical cores are available
+# Check the number of physical cores on the system
+CORES=$(grep -c ^processor /proc/cpuinfo)
+
+# Output the number of physical cores found
+echo "Found ${CORES} physical cores."
+echo "CORES=${CORES}" >> $topdir/.env
+
 case $1 in
   rm)
-    $DEBUG_ENV docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml ${PROFILE_ARG} rm -f
+    docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml rm -f
     ;;
 
   setup)
-      # TODO - we can get rid of this probably
-      # Right now I have left profiles present in case we decide to add containers. 
-      # However, the functionality is currently vestigial.
-      # TODO PROFILE_ARG="$PROFILE_ARG --profile redpanda-automation-server"
-      REDPANDA_AUTOMATION_SERVER=1
-      if [[ -z $REDPANDA_AUTOMATION_SERVER ]]; then
-          echo  "You must run with the --redpanda-automation-server switch"
-          exit 1
-      fi
 
+      # Enable the podman service for the user if it isn't already on
       systemctl enable --now --user podman podman.socket
 
-      #docker rm -f $(docker ps -aq) # TODO -remove
       # Delete any old containers still running on the server
       for container in simulateqcd
       do
@@ -218,10 +211,33 @@ case $1 in
         podman container rm -v $id
       done
 
+      # Check that the CUDA_VERISON is set and valid
+      url="https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/"
+
+      # Get the page content and filter for lines containing "cuda-toolkit"
+      content=$(curl -s "$url" | grep "cuda-toolkit")
+
+      # Parse the content for versions and filter out the ones containing "config"
+      versions=$(echo "$content" | sed -nE 's/.*cuda-toolkit-[0-9]+-[0-9]+-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+).*/\1/p' | grep -v "config" | uniq)
+
+      # Check if CUDA_VERSION is set
+      if [ -z "$CUDA_VERSION" ]; then
+          echo "Please set the CUDA_VERSION environment variable."
+          exit 1
+      fi
+
+      # Check if the provided version is valid
+      if echo "$versions" | grep -q "^${CUDA_VERSION}-[0-9]\+$"; then
+          echo "The provided version ($CUDA_VERSION) is valid."
+      else
+          echo "The provided version ($CUDA_VERSION) is not valid. Please choose a valid version from the list:"
+          echo "$versions" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+/\1/'
+          exit 1
+      fi
+
       export BUILDKIT_PROGRESS=plain
-      # TODO - need to move debug env
-      echo "Running PORT=9000 $DEBUG_ENV docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml ${PROFILE_ARG} up ${BUILD_ARG} ${DETACH_ARG}"
-      PORT=9000 $DEBUG_ENV docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml ${PROFILE_ARG} up ${BUILD_ARG} ${DETACH_ARG}
+      echo "Running docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml up ${BUILD_ARG} ${DETACH_ARG}"
+      docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml up ${BUILD_ARG} ${DETACH_ARG}
 
       # TODO - need to update this
       echo "Checking if the server is running..."
@@ -235,8 +251,8 @@ case $1 in
       ;;  
 
   stop)
-    echo "Running $DEBUG_ENV docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml  ${PROFILE_ARG} stop"
-    $DEBUG_ENV docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml ${PROFILE_ARG} stop
+    echo "Running docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml stop"
+    docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml stop
 
     ;;
 
@@ -248,18 +264,18 @@ case $1 in
 
     echo "Set up environment file in $topdir/.env"
     echo "To run manually, run the following command line:"
-    echo "$DEBUG_ENV PORT=9000 docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml ${PROFILE_ARG} up ${BUILD_ARG} ${DETACH_ARG}"
+    echo "docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml up ${BUILD_ARG} ${DETACH_ARG}"
     echo
-    $DEBUG_ENV PORT=9000 docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml ${PROFILE_ARG} up ${BUILD_ARG} ${DETACH_ARG}
+    docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml up ${BUILD_ARG} ${DETACH_ARG}
     ;;
 
   run)
     shift
-    podman exec -it redpanda-automation-server "$@"
+    podman exec -it simulateqcd "$@"
     ;;
 
-  status)
-    podman exec -it redpanda-automation-server supervisorctl status
+  status) # TODO - this probably needs to be updated
+    podman exec -it simulateqcd supervisorctl status
     ;;
 
   logs)
