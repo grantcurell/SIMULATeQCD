@@ -1,3 +1,10 @@
+ARG USER_ID
+ARG GROUP_ID
+ARG USERNAME
+ARG GROUPNAME
+ARG CORES
+ARG RHEL_VERSION
+ARG CUDA_VERSION
 
 # Build the CUDA toolkit. We do this because the size of the CUDA toolkit
 # exceeds that of the Docker build cache. This means if you want to make any
@@ -24,12 +31,6 @@ RUN microdnf install -y gcc-c++
 RUN microdnf install -y openmpi-devel
 RUN microdnf install -y kernel-devel
 RUN microdnf install -y openmpi
-
-ARG USER_ID
-ARG GROUP_ID
-ARG USERNAME
-ARG GROUPNAME
-ARG CORES
 
 # This code is just ensuring that our user exists and is running with the same permissions as the host user.
 # This is usually userid/gid 1000

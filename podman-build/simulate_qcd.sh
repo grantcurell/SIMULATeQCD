@@ -62,14 +62,6 @@ function parse_yaml {
     }'
 }
 
-# Call parse_yaml to create Bash variables from the YAML file
-eval "$(parse_yaml "$scriptdir/config.yml")"
-
-# Read in the YAML file
-echo "RHEL_VERSION=$RHEL_VERSION"
-echo "CUDA_VERSION=$CUDA_VERSION"
-# TODO add cores
-
 # Version check taken from this fine answer: https://stackoverflow.com/a/4025065/4427375
 # This is used to check if the docker compose version is sufficient.
 vercomp () {
@@ -233,6 +225,16 @@ CORES=$(grep -c ^processor /proc/cpuinfo)
 # Output the number of physical cores found
 echo "Found ${CORES} physical cores."
 echo "CORES=${CORES}" >> $topdir/.env
+
+# Call parse_yaml to create Bash variables from the YAML file
+eval "$(parse_yaml "$scriptdir/config.yml")"
+
+# Read in the YAML file
+echo "RHEL_VERSION=$RHEL_VERSION"
+echo "CUDA_VERSION=$CUDA_VERSION"
+# TODO add cores from config check
+echo "RHEL_VERSION=$RHEL_VERSION" >> $topdir/.env
+echo "CUDA_VERSION=$CUDA_VERSION" >> $topdir/.env
 
 case $1 in
   rm)
