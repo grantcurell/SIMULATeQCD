@@ -10,7 +10,7 @@ ARG CUDA_VERSION
 # exceeds that of the Docker build cache. This means if you want to make any
 # changes to the CUDA toolkit, you need to rebuild the entire image including
 # redownloading the entire 8 GBs. Using it as a builder bypasses this problem.
-FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION} as cuda-builder
+#FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION} as cuda-builder
 
 # Use the official Rocky Linux image
 FROM rockylinux:${RHEL_VERSION}-minimal
@@ -18,7 +18,17 @@ FROM rockylinux:${RHEL_VERSION}-minimal
 # Copy CUDA from the CUDA builder. Keep in mind that due to the size of these
 # files there is a large chance that everything after this line will rerun
 # after each build.
-COPY --from=cuda-builder /usr/local/cuda /usr/local/cuda
+#COPY --from=cuda-builder /usr/local/cuda /usr/local/cuda
+
+# This code is just ensuring that our user exists and is running with the same permissions as the host user.
+# This is usually userid/gid 1000
+RUN echo "GROUP_ID=${GROUP_ID} GROUPNAME=${GROUPNAME}"
+RUN echo "RHEL_VERSION=${RHEL_VERSION}"
+RUN (getent group ${GROUP_ID}  && (echo groupdel by-id ${GROUP_ID}; groupdel $(getent group ${GROUP_ID} | cut -d: -f1))) ||:
+RUN (getent group ${GROUPNAME} && (echo groupdel ${GROUPNAME}; groupdel ${GROUPNAME})) ||:
+RUN (getent passwd ${USERNAME} && (echo userdel ${USERNAME}; userdel -f ${USERNAME})) ||:
+RUN groupadd -g ${GROUP_ID} ${GROUPNAME}
+RUN useradd -l -u ${USER_ID} -g ${GROUPNAME} ${USERNAME}
 
 RUN microdnf update -y
 RUN microdnf install -y cmake
@@ -26,14 +36,6 @@ RUN microdnf install -y gcc-c++
 RUN microdnf install -y openmpi-devel
 RUN microdnf install -y kernel-devel
 RUN microdnf install -y openmpi
-
-# This code is just ensuring that our user exists and is running with the same permissions as the host user.
-# This is usually userid/gid 1000
-RUN (getent group ${GROUP_ID}  && (echo groupdel by-id ${GROUP_ID}; groupdel $(getent group ${GROUP_ID} | cut -d: -f1))) ||:
-RUN (getent group ${GROUPNAME} && (echo groupdel ${GROUPNAME}; groupdel ${GROUPNAME})) ||:
-RUN (getent passwd ${USERNAME} && (echo userdel ${USERNAME}; userdel -f ${USERNAME})) ||:
-RUN groupadd -g ${GROUP_ID} ${GROUPNAME}
-RUN useradd -l -u ${USER_ID} -g ${GROUPNAME} ${USERNAME}
 
 # Set environment variables for CUDA
 # TODO: This probably needs to be permanent
