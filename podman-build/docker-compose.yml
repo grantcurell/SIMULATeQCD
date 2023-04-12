@@ -16,6 +16,8 @@ services:
         - CUDA_VERSION=${CUDA_VERSION}
         - USERNAME=${USERNAME}
         - GROUPNAME=${GROUPNAME}
+        - USER_ID=${USER_ID}
+        - GROUP_ID=${GROUP_ID}
     networks:
       - host-bridge-net
     env_file: .env

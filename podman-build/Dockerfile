@@ -10,20 +10,15 @@ ARG CUDA_VERSION
 # exceeds that of the Docker build cache. This means if you want to make any
 # changes to the CUDA toolkit, you need to rebuild the entire image including
 # redownloading the entire 8 GBs. Using it as a builder bypasses this problem.
-#FROM rockylinux:${RHEL_VERSION}-minimal as cuda-builder
-FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION}
-
-# Add NVIDIA repository and install the CUDA Toolkit
-#RUN curl -sSL "https://developer.download.nvidia.com/compute/cuda/repos/rhel${RHEL_VERSION}/x86_64/cuda-rhel${RHEL_VERSION}.repo" > /etc/yum.repos.d/cuda.repo
-#RUN microdnf install -y cuda
+FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION} as cuda-builder
 
 # Use the official Rocky Linux image
-#FROM rockylinux:${RHEL_VERSION}-minimal
+FROM rockylinux:${RHEL_VERSION}-minimal
 
 # Copy CUDA from the CUDA builder. Keep in mind that due to the size of these
 # files there is a large chance that everything after this line will rerun
 # after each build.
-#COPY --from=cuda-builder /usr/local/cuda-12.1 /usr/local/cuda-12.1
+COPY --from=cuda-builder /usr/local/cuda /usr/local/cuda
 
 RUN microdnf update -y
 RUN microdnf install -y cmake
@@ -43,13 +38,13 @@ RUN useradd -l -u ${USER_ID} -g ${GROUPNAME} ${USERNAME}
 # Set environment variables for CUDA
 # TODO: This probably needs to be permanent
 ENV PATH=/usr/lib64/openmpi/bin:$PATH
-ENV PATH=/usr/local/cuda-12.1/bin:$PATH
-ENV LD_LIBRARY_PATH="/usr/local/cuda-12.1/lib64:${LD_LIBRARY_PATH}"
+ENV PATH=/usr/local/cuda/bin:$PATH
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
 
 # Set the environment variables in the user's shell profile
 RUN echo 'export PATH="/usr/lib64/openmpi/bin:$PATH"' >> /home/${USERNAME}/.profile
-#RUN echo 'export PATH="/usr/local/cuda-12.1/bin/nvcc:${PATH}"' >> /home/${USERNAME}/.profile
-RUN echo 'export LD_LIBRARY_PATH="/usr/local/cuda-12.1/lib64:${LD_LIBRARY_PATH}"' >> /home/${USERNAME}/.profile
+RUN echo 'export PATH="/usr/local/cuda/bin/nvcc:${PATH}"' >> /home/${USERNAME}/.profile
+RUN echo 'export LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"' >> /home/${USERNAME}/.profile
 
 # Create simulateqcd directory
 RUN mkdir /simulateqcd
