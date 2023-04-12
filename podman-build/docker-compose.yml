@@ -10,7 +10,12 @@ services:
     image: simulateqcd/simulateqcd:latest
     build:
       dockerfile: podman-build/Dockerfile
-      env_file: .env
+      args:
+        - CORES=${CORES}
+        - RHEL_VERSION=${RHEL_VERSION}
+        - CUDA_VERSION=${CUDA_VERSION}
+        - USERNAME=${USERNAME}
+        - GROUPNAME=${GROUPNAME}
     networks:
       - host-bridge-net
     env_file: .env

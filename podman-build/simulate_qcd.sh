@@ -23,6 +23,53 @@ check_redpanda_is_running() { # TODO - do I need this?
   fi
 }
 
+# This function parses a YAML file and converts it to a Bash script.
+# Parameters:
+#  $1: The path to the YAML file to parse
+#  $2: The prefix to use for Bash variable names
+#
+# The expected output of this function is a series of Bash variable
+# declarations, based on the contents of the input YAML file. For example if
+# your YAML file contains 'RHEL_VERSION: 9', this would produce 
+# CONFIG_RHEL_VERSION="9"
+# Original code taken from: https://stackoverflow.com/a/21189044/4427375
+function parse_yaml {
+    local prefix=$2
+    # Define regular expressions to match various parts of YAML syntax
+    local s='[[:space:]]*'
+    local w='[a-zA-Z0-9_]*'
+    local fs=$(echo @|tr @ '\034')
+    # Use sed to replace various parts of the YAML with Bash syntax
+    sed -ne "s|^\($s\):|\1|" \
+         -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+         -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+    # Use awk to create Bash variables based on the YAML data
+    awk -F$fs '{
+        indent = length($1)/2;
+        vname[indent] = $2;
+        for (i in vname) {
+            if (i > indent) {
+                delete vname[i]
+            }
+        }
+        if (length($3) > 0) {
+            vn="";
+            for (i=0; i<indent; i++) {
+                vn=(vn)(vname[i])("_")
+            }
+            printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+        }
+    }'
+}
+
+# Call parse_yaml to create Bash variables from the YAML file
+eval "$(parse_yaml "$scriptdir/config.yml")"
+
+# Read in the YAML file
+echo "RHEL_VERSION=$RHEL_VERSION"
+echo "CUDA_VERSION=$CUDA_VERSION"
+# TODO add cores
+
 # Version check taken from this fine answer: https://stackoverflow.com/a/4025065/4427375
 # This is used to check if the docker compose version is sufficient.
 vercomp () {
@@ -228,7 +275,7 @@ case $1 in
 
       # Check if the provided version is valid
       if echo "$versions" | grep -q "^${CUDA_VERSION}-[0-9]\+$"; then
-          echo "The provided version ($CUDA_VERSION) is valid."
+          echo "The provided CUDA toolkit version ($CUDA_VERSION) is valid."
       else
           echo "The provided version ($CUDA_VERSION) is not valid. Please choose a valid version from the list:"
           echo "$versions" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+/\1/'

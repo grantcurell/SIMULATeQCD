@@ -4,19 +4,19 @@
 # changes to the CUDA toolkit, you need to rebuild the entire image including
 # redownloading the entire 8 GBs. Using it as a builder bypasses this problem.
 #FROM rockylinux:${RHEL_VERSION}-minimal as cuda-builder
-FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION} as cuda-builder
+FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION}
 
 # Add NVIDIA repository and install the CUDA Toolkit
 #RUN curl -sSL "https://developer.download.nvidia.com/compute/cuda/repos/rhel${RHEL_VERSION}/x86_64/cuda-rhel${RHEL_VERSION}.repo" > /etc/yum.repos.d/cuda.repo
 #RUN microdnf install -y cuda
 
 # Use the official Rocky Linux image
-FROM rockylinux:${RHEL_VERSION}-minimal
+#FROM rockylinux:${RHEL_VERSION}-minimal
 
 # Copy CUDA from the CUDA builder. Keep in mind that due to the size of these
 # files there is a large chance that everything after this line will rerun
 # after each build.
-COPY --from=cuda-builder /usr/local/cuda-12.1 /usr/local/cuda-12.1
+#COPY --from=cuda-builder /usr/local/cuda-12.1 /usr/local/cuda-12.1
 
 RUN microdnf update -y
 RUN microdnf install -y cmake
@@ -47,7 +47,7 @@ ENV LD_LIBRARY_PATH="/usr/local/cuda-12.1/lib64:${LD_LIBRARY_PATH}"
 
 # Set the environment variables in the user's shell profile
 RUN echo 'export PATH="/usr/lib64/openmpi/bin:$PATH"' >> /home/${USERNAME}/.profile
-RUN echo 'export PATH="/usr/local/cuda-12.1/bin/nvcc:${PATH}"' >> /home/${USERNAME}/.profile
+#RUN echo 'export PATH="/usr/local/cuda-12.1/bin/nvcc:${PATH}"' >> /home/${USERNAME}/.profile
 RUN echo 'export LD_LIBRARY_PATH="/usr/local/cuda-12.1/lib64:${LD_LIBRARY_PATH}"' >> /home/${USERNAME}/.profile
 
 # Create simulateqcd directory
@@ -69,7 +69,8 @@ RUN nvcc --version
 
 # Build code using cmake
 # TODO - Need to parameterize these options
-RUN cmake ../simulateqcd/ -DARCHITECTURE="70" -DUSE_GPU_AWARE_MPI=ON -DUSE_GPU_P2P=ON -DMPI_CXX_LIBRARIES=/usr/lib64/openmpi/lib/libmpi_cxx.so -DMPI_CXX_HEADER_DIR=/usr/include/openmpi-x86_64  -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.1/bin/nvcc
+#RUN cmake ../simulateqcd/ -DARCHITECTURE="70" -DUSE_GPU_AWARE_MPI=ON -DUSE_GPU_P2P=ON -DMPI_CXX_LIBRARIES=/usr/lib64/openmpi/lib/libmpi_cxx.so -DMPI_CXX_HEADER_DIR=/usr/include/openmpi-x86_64  -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.1/bin/nvcc
+RUN cmake ../simulateqcd/ -DARCHITECTURE="70" -DUSE_GPU_AWARE_MPI=ON -DUSE_GPU_P2P=ON
 RUN make -j ${CORES}
 
 # Set the user to the user we created earlier
