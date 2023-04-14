@@ -202,21 +202,14 @@ fi
 # Export docker host and set it to the filepath of podman's socket
 export DOCKER_HOST=unix://$(podman info --format '{{.Host.RemoteSocket.Path}}')
 
-if ! which docker-compose; then
-  echo "You need to install docker-compose on your machine. See https://docs.docker.com/compose/install/other/#on-linux"
-  exit
-fi
-testvercomp $(docker-compose --version | cut -d ' ' -f 4 | sed 's/^v//') 2.2.0 '>'
-set -e
-
 # Make container user UID match calling user so that containers dont leave droppings we cant remove
-> $topdir/.env
-echo "USER_ID=$(id -u)" >> $topdir/.env
-echo "GROUP_ID=$(id -g)" >> $topdir/.env
+USER_ID=$(id -u)
+GROUP_ID=$(id -g)
+USERNAME=simulateqcd
+GROUPNAME=simulateqcd
 
-# Set the username and groupname
-echo "USERNAME=simulateqcd" >> $topdir/.env
-echo "GROUPNAME=simulateqcd" >> $topdir/.env
+echo "Group ID: ${GROUP_ID}"
+echo "User ID: ${USER_ID}"
 
 # Check how many physical cores are available
 # Check the number of physical cores on the system
@@ -224,7 +217,6 @@ CORES=$(grep -c ^processor /proc/cpuinfo)
 
 # Output the number of physical cores found
 echo "Found ${CORES} physical cores."
-echo "CORES=${CORES}" >> $topdir/.env
 
 # Call parse_yaml to create Bash variables from the YAML file
 eval "$(parse_yaml "$scriptdir/config.yml")"
@@ -233,12 +225,12 @@ eval "$(parse_yaml "$scriptdir/config.yml")"
 echo "RHEL_VERSION=$RHEL_VERSION"
 echo "CUDA_VERSION=$CUDA_VERSION"
 # TODO add cores from config check
-echo "RHEL_VERSION=$RHEL_VERSION" >> $topdir/.env
-echo "CUDA_VERSION=$CUDA_VERSION" >> $topdir/.env
+RHEL_VERSION=$RHEL_VERSION
+CUDA_VERSION=$CUDA_VERSION
 
 case $1 in
   rm)
-    docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml rm -f
+    podman rm simulateqcd
     ;;
 
   setup)
@@ -285,8 +277,20 @@ case $1 in
       fi
 
       export BUILDKIT_PROGRESS=plain
-      echo "Running docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml up ${BUILD_ARG} ${DETACH_ARG}"
-      docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml up ${BUILD_ARG} ${DETACH_ARG}
+      echo "Running: podman build --tag simulateqcd/simulateqcd:latest --label name=simulateqcd --build-arg CORES=${CORES} --build-arg RHEL_VERSION=${RHEL_VERSION} --build-arg CUDA_VERSION=${CUDA_VERSION} --build-arg USERNAME=${USERNAME} --build-arg GROUPNAME=${GROUPNAME} --build-arg USER_ID=${USER_ID} --build-arg GROUP_ID=${GROUP_ID} -f $scriptdir/Dockerfile"
+      podman build \
+        --tag simulateqcd/simulateqcd:latest \
+        --label name=simulateqcd \
+        --build-arg CORES=${CORES} \
+        --build-arg RHEL_VERSION=${RHEL_VERSION} \
+        --build-arg CUDA_VERSION=${CUDA_VERSION} \
+        --build-arg USERNAME=${USERNAME} \
+        --build-arg GROUPNAME=${GROUPNAME} \
+        --build-arg USER_ID=${USER_ID} \
+        --build-arg GROUP_ID=${GROUP_ID} \
+        --build-arg DIRECTORY=$topdir \
+        -f $scriptdir/Dockerfile
+        $topdir
 
       # TODO - need to update this
       echo "Checking if the server is running..."

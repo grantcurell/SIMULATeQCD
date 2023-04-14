@@ -1,3 +1,12 @@
+# Build the CUDA toolkit. We do this because the size of the CUDA toolkit
+# exceeds that of the Docker build cache. This means if you want to make any
+# changes to the CUDA toolkit, you need to rebuild the entire image including
+# redownloading the entire 8 GBs. Using it as a builder bypasses this problem.
+FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION} as cuda-builder
+
+# Use the official Rocky Linux image
+FROM rockylinux:${RHEL_VERSION}-minimal
+
 ARG USER_ID
 ARG GROUP_ID
 ARG USERNAME
@@ -5,20 +14,7 @@ ARG GROUPNAME
 ARG CORES
 ARG RHEL_VERSION
 ARG CUDA_VERSION
-
-# Build the CUDA toolkit. We do this because the size of the CUDA toolkit
-# exceeds that of the Docker build cache. This means if you want to make any
-# changes to the CUDA toolkit, you need to rebuild the entire image including
-# redownloading the entire 8 GBs. Using it as a builder bypasses this problem.
-#FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION} as cuda-builder
-
-# Use the official Rocky Linux image
-FROM rockylinux:${RHEL_VERSION}-minimal
-
-# Copy CUDA from the CUDA builder. Keep in mind that due to the size of these
-# files there is a large chance that everything after this line will rerun
-# after each build.
-#COPY --from=cuda-builder /usr/local/cuda /usr/local/cuda
+ARG DIRECTORY
 
 # This code is just ensuring that our user exists and is running with the same permissions as the host user.
 # This is usually userid/gid 1000
@@ -53,11 +49,16 @@ RUN mkdir /simulateqcd
 RUN mkdir /build
 
 # Copy source code into the container
-COPY ../src /simulateqcd/src
+COPY /opt/SIMULATeQCD/src /simulateqcd/src
 COPY ../CMakeLists.txt /simulateqcd/CMakeLists.txt
 COPY ../parameter /simulateqcd/parameter
 COPY ../scripts /simulateqcd/scripts
 COPY ../test_conf /simulateqcd/test_conf
+
+# Copy CUDA from the CUDA builder. Keep in mind that due to the size of these
+# files there is a large chance that everything after this line will rerun
+# after each build.
+COPY --from=cuda-builder /usr/local/cuda /usr/local/cuda
 
 # Set the working directory to /app
 WORKDIR /build
