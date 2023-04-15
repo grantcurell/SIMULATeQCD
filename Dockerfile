@@ -49,11 +49,11 @@ RUN mkdir /simulateqcd
 RUN mkdir /build
 
 # Copy source code into the container
-COPY /opt/SIMULATeQCD/src /simulateqcd/src
-COPY ../CMakeLists.txt /simulateqcd/CMakeLists.txt
-COPY ../parameter /simulateqcd/parameter
-COPY ../scripts /simulateqcd/scripts
-COPY ../test_conf /simulateqcd/test_conf
+COPY src /simulateqcd/src
+COPY CMakeLists.txt /simulateqcd/CMakeLists.txt
+COPY parameter /simulateqcd/parameter
+COPY scripts /simulateqcd/scripts
+COPY test_conf /simulateqcd/test_conf
 
 # Copy CUDA from the CUDA builder. Keep in mind that due to the size of these
 # files there is a large chance that everything after this line will rerun
