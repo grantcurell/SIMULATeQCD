@@ -48,11 +48,11 @@ RUN mkdir /simulateqcd
 RUN mkdir /build
 
 # Copy source code into the container
-COPY src /simulateqcd/src
-COPY CMakeLists.txt /simulateqcd/CMakeLists.txt
-COPY parameter /simulateqcd/parameter
-COPY scripts /simulateqcd/scripts
-COPY test_conf /simulateqcd/test_conf
+COPY ./src /simulateqcd/src
+COPY ./CMakeLists.txt /simulateqcd/CMakeLists.txt
+COPY ./parameter /simulateqcd/parameter
+COPY ./scripts /simulateqcd/scripts
+COPY ./test_conf /simulateqcd/test_conf
 
 # Copy CUDA Toolkit from the CUDA builder image. We put this later on because the copy is
 # sufficiently large that podman can't cache it so anything after this must rerun every time.

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptdir=$(cd $(dirname $0); pwd)
+scriptdir=$(cd $(dirname $0); pwd)/podman-build
 topdir=$(cd $scriptdir/../; pwd)
 cd $topdir
 
@@ -177,6 +177,10 @@ case $1 in
 
       # This function captures all the possible build targets from the CMakeLists.txt file
 
+      echo '####################################'
+      echo '#          BUILD TARGETS           #'
+      echo '####################################'
+
       # Define the regular expression to match lines with format
       # add_SIMULATeQCD_executable(memManTest src/testing/main_memManTest.cpp)
       # The capture group ([[:alnum:]_]+) matches one or more alphanumeric characters 
@@ -184,7 +188,7 @@ case $1 in
       regex='add_SIMULATeQCD_executable\(([[:alnum:]_]+)'
 
       # Find all matching lines in the CMakeLists.txt file
-      matches=$(grep -oE "$regex" $scriptdir/CMakeLists.txt)
+      matches=$(grep -oE "$regex" $topdir/CMakeLists.txt)
 
       # Extract the capture group from each match and add it to the list
       list=()
