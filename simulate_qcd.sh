@@ -264,6 +264,8 @@ case $1 in
 --build-arg USE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} \
 --build-arg USE_GPU_P2P=${USE_GPU_P2P} \
 --build-arg TARGET=${TARGET} \
+--build-arg ADDITIONAL_CMAKE_OPTIONS=${ADDITIONAL_CMAKE_OPTIONS} \
+--build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
 -f $scriptdir/Dockerfile
 $topdir"
 
@@ -281,8 +283,10 @@ $topdir"
         --build-arg USE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} \
         --build-arg USE_GPU_P2P=${USE_GPU_P2P} \
         --build-arg TARGET=${TARGET} \
+        --build-arg ADDITIONAL_CMAKE_OPTIONS=${ADDITIONAL_CMAKE_OPTIONS} \
+        --build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
         -f $scriptdir/Dockerfile
-        $topdir
+        /opt/SIMULATeQCD
 
       # Remove dangling images (images that are not tagged)
       #podman rmi $(podman images -f "dangling=true" -q)

@@ -15,6 +15,8 @@ ARG ARCHITECTURE
 ARG USE_GPU_AWARE_MPI
 ARG USE_GPU_P2P
 ARG TARGET
+ARG ADDITIONAL_CMAKE_OPTIONS
+ARG ADDITIONAL_MAKE_OPTIONS
 
 # This code is just ensuring that our user exists and is running with the same permissions as the host user.
 # This is usually userid/gid 1000
@@ -48,11 +50,11 @@ RUN mkdir /simulateqcd
 RUN mkdir /build
 
 # Copy source code into the container
-COPY ./src /simulateqcd/src
-COPY ./CMakeLists.txt /simulateqcd/CMakeLists.txt
-COPY ./parameter /simulateqcd/parameter
-COPY ./scripts /simulateqcd/scripts
-COPY ./test_conf /simulateqcd/test_conf
+COPY src /simulateqcd/src
+COPY CMakeLists.txt /simulateqcd/CMakeLists.txt
+COPY parameter /simulateqcd/parameter
+COPY scripts /simulateqcd/scripts
+COPY test_conf /simulateqcd/test_conf
 
 # Copy CUDA Toolkit from the CUDA builder image. We put this later on because the copy is
 # sufficiently large that podman can't cache it so anything after this must rerun every time.
@@ -65,8 +67,8 @@ WORKDIR /build
 RUN nvcc --version
 
 # Build code using cmake
-RUN cmake ../simulateqcd/ -DARCHITECTURE=${ARCHITECTURE} -DUSE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} -DUSE_GPU_P2P=${USE_GPU_P2P}
-RUN make -j ${CORES} ${TARGET}
+RUN cmake ../simulateqcd/ -DARCHITECTURE=${ARCHITECTURE} -DUSE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} -DUSE_GPU_P2P=${USE_GPU_P2P} ${ADDITIONAL_CMAKE_OPTIONS}
+RUN make -j ${CORES} ${TARGET} ${ADDITIONAL_MAKE_OPTIONS}
 
 # Set the user to the user we created earlier
 USER ${USERNAME}

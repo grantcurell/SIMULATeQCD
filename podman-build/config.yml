@@ -45,7 +45,14 @@ USE_GPU_AWARE_MPI: "ON"
 USE_GPU_P2P: "ON"
 
 # Enable or disable the use of the HIP programming language for AMD GPUs. Options are ON or OFF
-USE_HIP_AMD: OFF 
+USE_HIP_AMD: "OFF" 
 
-# Any options you want to add to the cmake command. These will be added to the end of the `cmake line`
-TARGET: GenerateQuenched
+# The build target. If you specify nothing, it will build all targets. You can get a list of possible build
+# targets by running `./simulateqcd list`
+TARGET: 
+
+# These are added to the end of the cmake line. Any other options you would like to add to cmake you can add here
+ADDITIONAL_CMAKE_OPTIONS: 
+
+# These are added to the end of the make line. Any other options you would like to add to make you can add here
+ADDITIONAL_MAKE_OPTIONS:
