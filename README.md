@@ -11,7 +11,6 @@
 SIMULATeQCD is a multi-GPU Lattice QCD framework that makes it simple and easy for physicists to implement lattice QCD formulas while still providing the best possible performance.
 
 - [SIMULATeQCD](#simulateqcd)
-  - [Downloading the code](#downloading-the-code)
   - [How to Build](#how-to-build)
     - [Prerequisites](#prerequisites)
     - [Download SimulateQCD](#download-simulateqcd)
@@ -27,10 +26,6 @@ SIMULATeQCD is a multi-GPU Lattice QCD framework that makes it simple and easy f
   - [Contributors](#contributors)
   - [Citing SIMULATeQCD](#citing-simulateqcd)
   - [Acknowledgment](#acknowledgment)
-
-## Downloading the code
-
-First download and activate `git-lfs`. The code can then be cloned to your machine using:
 
 ## How to Build
 
