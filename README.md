@@ -48,7 +48,6 @@ You will need to install [`git-lfs`](https://git-lfs.github.com/) before continu
 
 Run `git clone https://github.com/LatticeQCD/SIMULATeQCD.git`
 
-
 ### Compile Using Container (Recommended)
 
 #### Install Podman
@@ -63,7 +62,7 @@ If you have a non RHEL-based OS see [here](https://podman.io/getting-started/ins
 
 ------------
 
-Run `podman run hello-world` as your user to test your privileges. If this does not run correctly, Patches will not run correctly.
+Run `podman run hello-world` as your user to test your privileges. If this does not run correctly, simulateqcd will not run correctly.
 
 **WARNING**: If you are SSH'ing to your server, make sure you ssh as a user and **not** root. If you SSH as root and then `su` to user, podman will issue `ERRO[0000] XDG_RUNTIME_DIR directory "/run/user/0" is not owned by the current user`. This happens because the user that originally setup `/run` is root rather than your user.
 
