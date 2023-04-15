@@ -11,11 +11,10 @@
 SIMULATeQCD is a multi-GPU Lattice QCD framework that makes it simple and easy for physicists to implement lattice QCD formulas while still providing the best possible performance.
 
 - [SIMULATeQCD](#simulateqcd)
-  - [Prerequisites](#prerequisites)
   - [Downloading the code](#downloading-the-code)
   - [How to Build](#how-to-build)
+    - [Prerequisites](#prerequisites)
     - [Download SimulateQCD](#download-simulateqcd)
-      - [Prerequisites](#prerequisites-1)
       - [Manual Download](#manual-download)
       - [Using git Command Line](#using-git-command-line)
     - [Compile Using Container (Recommended)](#compile-using-container-recommended)
@@ -28,28 +27,17 @@ SIMULATeQCD is a multi-GPU Lattice QCD framework that makes it simple and easy f
   - [Citing SIMULATeQCD](#citing-simulateqcd)
   - [Acknowledgment](#acknowledgment)
 
-## Prerequisites
-
-The following software is required to compile SIMULATeQCD:
-
-* `cmake` (Some versions have the "--phtread" compiler bug. Versions that definitely work are [3.14.6](https://gitlab.kitware.com/cmake/cmake/tree/v3.14.6) or 3.19.2.)
-* `C++` compiler with `C++17` support.
-* `MPI` (e.g. `openmpi-4.0.4`).
-* `CUDA Toolkit` version 11+. 
-* `pip install -r requirements.txt` to build the documentation.
-
 ## Downloading the code
 
 First download and activate `git-lfs`. The code can then be cloned to your machine using:
 
-
 ## How to Build
 
-### Download SimulateQCD
-
-#### Prerequisites
+### Prerequisites
 
 You will need to install []`git-lfs`](https://git-lfs.github.com/) before continuing or you will need to use a git client which natively supports it.
+
+### Download SimulateQCD
 
 #### Manual Download
 
@@ -77,9 +65,16 @@ Run `podman run hello-world` as your user to test your privileges. If this does 
 
 ### Compile Manually
 
+You will need to download the following before continuing:
+
+* `cmake` (Some versions have the "--phtread" compiler bug. Versions that definitely work are [3.14.6](https://gitlab.kitware.com/cmake/cmake/tree/v3.14.6) or 3.19.2.)
+* `C++` compiler with `C++17` support.
+* `MPI` (e.g. `openmpi-4.0.4`).
+* `CUDA Toolkit` version 11+. 
+* `pip install -r requirements.txt` to build the documentation.
+
 To setup the compilation, create a folder outside of the code directory (e.g. `../build/`) and **from there** call the following example script: 
 ```shell
-TODO - pull this in
 cmake ../SIMULATeQCD/ \
 -DARCHITECTURE="70" \
 -DUSE_GPU_AWARE_MPI=ON \
@@ -163,6 +158,7 @@ M. Rodekamp,
 [C. Schmidt](https://github.com/schmidt74), 
 [P. Scior](https://github.com/philomat), 
 [H.-T. Shu](https://github.com/haitaoshu), 
+[G. Curell](https://github.com/grantcurell/)
 
 ## Citing SIMULATeQCD
 

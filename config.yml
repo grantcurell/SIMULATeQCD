@@ -1,5 +1,3 @@
-# Example YAML Configuration File
-
 # This sets the version of the OS *in the container*. This does not need to match
 # the target computer. The primary reason for changing this is to allow the use
 # of older verisons of the CUDA toolkit. Older toolkits are only available on
@@ -7,9 +5,9 @@
 RHEL_VERSION: 9
 
 # This controls the number of threads that the build will spawn. It is used as
-# follows, `make -j ${CORES}`
-# TODO - need to finish
-CORES: 4
+# follows, `make -j ${CORES}` If left undefined, it will use all cores available
+# on the system.
+CORES: 
 
 # This is the CUDA version that is used for the build.
 CUDA_VERSION: 12.1.0
@@ -18,6 +16,7 @@ CUDA_VERSION: 12.1.0
 # It is defined here: https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html.
 # Each CUDA Toolkit has a list of supported architectures. This post is
 # helpful: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+# See https://en.wikipedia.org/wiki/CUDA#GPUs_supported for a list of compatibilities
 # Current list:
 # Fermi: 20
 # Kepler: 30, 35, 37
@@ -44,3 +43,6 @@ USE_GPU_AWARE_MPI: "ON"
 # system first. This can result in faster data transfer and reduced CPU overhead, especially for
 # multi-GPU systems. Options are ON or OFF
 USE_GPU_P2P: "ON"
+
+# Enable or disable the use of the HIP programming language for AMD GPUs. Options are ON or OFF
+USE_HIP_AMD: OFF 

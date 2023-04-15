@@ -62,53 +62,6 @@ function parse_yaml {
     }'
 }
 
-# Version check taken from this fine answer: https://stackoverflow.com/a/4025065/4427375
-# This is used to check if the docker compose version is sufficient.
-vercomp () {
-    if [[ $1 == $2 ]]
-    then
-        return 0
-    fi
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    # fill empty fields in ver1 with zeros
-    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
-    do
-        ver1[i]=0
-    done
-    for ((i=0; i<${#ver1[@]}; i++))
-    do
-        if [[ -z ${ver2[i]} ]]
-        then
-            # fill empty fields in ver2 with zeros
-            ver2[i]=0
-        fi
-        if ((10#${ver1[i]} > 10#${ver2[i]}))
-        then
-            return 1
-        fi
-        if ((10#${ver1[i]} < 10#${ver2[i]}))
-        then
-            return 2
-        fi
-    done
-    return 0
-}
-
-testvercomp () {
-    vercomp $1 $2
-    case $? in
-        0) op='=';;
-        1) op='>';;
-        2) op='<';;
-    esac
-    if [[ $op != $3 ]]
-    then
-        echo "FAIL: Your docker compose version is $1. It must be 2.2.0 or higher!"
-        exit
-    fi
-}
-
 BUILD_ARG=
 DETACH_ARG="-d"
 DEBUG_ARG=""
@@ -135,12 +88,7 @@ while [[ $# -gt 0 ]]; do
       echo "Usage:  $(basename $0) (start|stop|setup|[day command]|run [command]|status|logs [target]) [--build]"
       echo
       echo "Args:"
-      echo "  start      Start up containerized automation server services"
-      echo "  stop       Stop services"
-      echo "  setup      Setup the automation server with your user defined input values"
-      echo "  preday0      Validate inputs and generate device configurations" # TODO need to get rid of
-      echo "  run        Allows you to run a command in the automation server container."
-      echo "  status        Get the status of Patches" # TODO need to setup
+      echo "  build       Build SIMULATeQCD from source"
       echo "  logs        Get the logs for the Red Panda server" # TODO need to setup
       echo
       echo "Flags:"
@@ -153,9 +101,6 @@ while [[ $# -gt 0 ]]; do
       echo "  --detach|--nodetach   Either detach (default) from docker compose or stay attached and view debug"
       exit 0
       ;;
-    --build)
-      BUILD_ARG="--build --remove-orphans"
-      ;;
     --detach)
       DETACH_ARG="-d"
       ;;
@@ -165,11 +110,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --verbose)
       VERBOSE="-vvv"
-      ;;
-    --debug) # TODO do I need this?
-      # package.json will have to be present in the server directory to function correctly
-      cp package.json server
-      cp -R migrations server
       ;;
     --)
       shift
@@ -211,12 +151,13 @@ GROUPNAME=simulateqcd
 echo "Group ID: ${GROUP_ID}"
 echo "User ID: ${USER_ID}"
 
-# Check how many physical cores are available
-# Check the number of physical cores on the system
-CORES=$(grep -c ^processor /proc/cpuinfo)
+# Check how many physical cores are available. Only run if CORES is not set
+if [ -z "$CORES" ]; then
+    CORES=$(grep -c ^processor /proc/cpuinfo)
 
-# Output the number of physical cores found
-echo "Found ${CORES} physical cores."
+    # Output the number of physical cores found
+    echo "Found ${CORES} physical cores."
+fi
 
 # Call parse_yaml to create Bash variables from the YAML file
 eval "$(parse_yaml "$scriptdir/config.yml")"
@@ -224,7 +165,6 @@ eval "$(parse_yaml "$scriptdir/config.yml")"
 # Read in the YAML file
 echo "RHEL_VERSION=$RHEL_VERSION"
 echo "CUDA_VERSION=$CUDA_VERSION"
-# TODO add cores from config check
 RHEL_VERSION=$RHEL_VERSION
 CUDA_VERSION=$CUDA_VERSION
 
@@ -233,7 +173,7 @@ case $1 in
     podman rm simulateqcd
     ;;
 
-  setup)
+  build)
 
       # Enable the podman service for the user if it isn't already on
       systemctl enable --now --user podman podman.socket
@@ -288,9 +228,14 @@ case $1 in
         --build-arg GROUPNAME=${GROUPNAME} \
         --build-arg USER_ID=${USER_ID} \
         --build-arg GROUP_ID=${GROUP_ID} \
-        --build-arg DIRECTORY=$topdir \
+        --build-arg ARCHITECTURE=${ARCHITECTURE} \
+        --build-arg USE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} \
+        --build-arg USE_GPU_P2P=${USE_GPU_P2P} \
         -f $scriptdir/Dockerfile
         $topdir
+
+      # Remove dangling images (images that are not tagged)
+      podman rmi $(podman images -f "dangling=true" -q)
 
       # TODO - need to update this
       echo "Checking if the server is running..."
@@ -300,43 +245,12 @@ case $1 in
           exit 1
       fi
 
-      echo "Setup has finished and Patches is running as expected!"
+      # TODO - need to update this
+      echo "The build has finished and Patches is running as expected!"
       ;;  
 
-  stop)
-    echo "Running docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml stop"
-    docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml stop
-
-    ;;
-
-  start)
-    if  [[ ! -s docker-build/container-info-patches.txt  ]]; then
-      echo "Patches must be set up before running. Please run 'patches setup' first."
-      exit 1
-    fi
-
-    echo "Set up environment file in $topdir/.env"
-    echo "To run manually, run the following command line:"
-    echo "docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml up ${BUILD_ARG} ${DETACH_ARG}"
-    echo
-    docker-compose --project-directory $topdir -f $scriptdir/docker-compose.yml up ${BUILD_ARG} ${DETACH_ARG}
-    ;;
-
-  run)
-    shift
-    podman exec -it simulateqcd "$@"
-    ;;
-
-  status) # TODO - this probably needs to be updated
-    podman exec -it simulateqcd supervisorctl status
-    ;;
-
-  logs)
-    podman logs 
-    ;;
-
   *)
-    echo "Specify 'start' or 'stop'"
+    echo "Run $(basename $0) build to build SIMULATeQCD."
     exit 1
     ;;
 esac
