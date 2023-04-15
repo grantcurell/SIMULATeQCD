@@ -78,7 +78,7 @@ eval set -- "$opts"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h)
-      echo "Usage:  $(basename $0) (start|stop|setup|[day command]|run [command]|status|logs [target]) [--build]"
+      echo "Usage:  $(basename $0) (build|list)"
       echo
       echo "Args:"
       echo "  build       Build SIMULATeQCD from source"
