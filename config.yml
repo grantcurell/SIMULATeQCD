@@ -8,7 +8,39 @@ RHEL_VERSION: 9
 
 # This controls the number of threads that the build will spawn. It is used as
 # follows, `make -j ${CORES}`
+# TODO - need to finish
 CORES: 4
 
 # This is the CUDA version that is used for the build.
 CUDA_VERSION: 12.1.0
+
+# This is the CUDA architecture for which you want to generate device code. 
+# It is defined here: https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html.
+# Each CUDA Toolkit has a list of supported architectures. This post is
+# helpful: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+# Current list:
+# Fermi: 20
+# Kepler: 30, 35, 37
+# Maxwell: 50, 52, 53
+# Pascal: 60, 61, 62
+# Volta: 70, 72
+# Turing: 75
+# Ampere: 80, 86, 87
+# Ada: 89
+# Hopper: 90
+ARCHITECTURE: "70"
+
+# USE_GPU_AWARE_MPI boolean option that enables or disables the use of GPU-aware MPI libraries when
+# building an MPI-enabled application with CUDA. When USE_GPU_AWARE_MPI is set to ON, CMake will
+# attempt to find and link against a GPU-aware MPI library, which is a version of the MPI library
+# that is optimized for communication between CPUs and GPUs. This can result in better performance
+# when running MPI applications that use CUDA. See https://developer.nvidia.com/blog/introduction-cuda-aware-mpi/
+# Options are ON or OFF
+USE_GPU_AWARE_MPI: "ON"
+
+# USE_GPU_P2P enables or disables the use of GPU peer-to-peer (P2P) communication when building an
+# application with CUDA. Nvidia's proprietary GPU interconnect is called NVLink. GPU P2P communication
+# allows for direct data transfer between two GPUs without the need to transfer the data to the host
+# system first. This can result in faster data transfer and reduced CPU overhead, especially for
+# multi-GPU systems. Options are ON or OFF
+USE_GPU_P2P: "ON"

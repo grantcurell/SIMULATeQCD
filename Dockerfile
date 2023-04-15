@@ -67,9 +67,7 @@ WORKDIR /build
 RUN nvcc --version
 
 # Build code using cmake
-# TODO - Need to parameterize these options
-#RUN cmake ../simulateqcd/ -DARCHITECTURE="70" -DUSE_GPU_AWARE_MPI=ON -DUSE_GPU_P2P=ON -DMPI_CXX_LIBRARIES=/usr/lib64/openmpi/lib/libmpi_cxx.so -DMPI_CXX_HEADER_DIR=/usr/include/openmpi-x86_64  -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.1/bin/nvcc
-RUN cmake ../simulateqcd/ -DARCHITECTURE="70" -DUSE_GPU_AWARE_MPI=ON -DUSE_GPU_P2P=ON
+RUN cmake ../simulateqcd/ -DARCHITECTURE="${ARCHITECTURE}" -DUSE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} -DUSE_GPU_P2P=${USE_GPU_P2P}
 RUN make -j ${CORES}
 
 # Set the user to the user we created earlier

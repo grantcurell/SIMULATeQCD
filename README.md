@@ -12,12 +12,15 @@ SIMULATeQCD is a multi-GPU Lattice QCD framework that makes it simple and easy f
 
 - [SIMULATeQCD](#simulateqcd)
   - [Prerequisites](#prerequisites)
-  - [Downloading the code - TODO - need to integrate this](#downloading-the-code---todo---need-to-integrate-this)
-  - [Installation](#installation)
+  - [Downloading the code](#downloading-the-code)
+  - [How to Build](#how-to-build)
     - [Download SimulateQCD](#download-simulateqcd)
-    - [Install Podman](#install-podman)
-    - [Install docker-compose](#install-docker-compose)
-  - [Building the code](#building-the-code)
+      - [Prerequisites](#prerequisites-1)
+      - [Manual Download](#manual-download)
+      - [Using git Command Line](#using-git-command-line)
+    - [Compile Using Container (Recommended)](#compile-using-container-recommended)
+      - [Install Podman](#install-podman)
+    - [Compile Manually](#compile-manually)
   - [Example: Plaquette action computation](#example-plaquette-action-computation)
   - [Documentation](#documentation)
   - [Getting help and bug report](#getting-help-and-bug-report)
@@ -35,25 +38,36 @@ The following software is required to compile SIMULATeQCD:
 * `CUDA Toolkit` version 11+. 
 * `pip install -r requirements.txt` to build the documentation.
 
-## Downloading the code - TODO - need to integrate this
+## Downloading the code
 
 First download and activate `git-lfs`. The code can then be cloned to your machine using:
-```shell
-git clone https://github.com/LatticeQCD/SIMULATeQCD.git
-```
 
-## Installation
+
+## How to Build
 
 ### Download SimulateQCD
+
+#### Prerequisites
+
+You will need to install []`git-lfs`](https://git-lfs.github.com/) before continuing or you will need to use a git client which natively supports it.
+
+#### Manual Download
 
 1. Go to [SIMULATeQCD's website](https://github.com/LatticeQCD/SIMULATeQCD)
 2. Click the green *Code* button and then click *Download Zip*
 
-![](images/2023-02-03-10-30-46.png) #TODO - update
+![](images/2023-04-15-06-03-10.png)
 
 3. Extract the zip in a location of your choosing and extract it
 
-### Install Podman
+#### Using git Command Line
+
+Run `git clone https://github.com/LatticeQCD/SIMULATeQCD.git`
+
+
+### Compile Using Container (Recommended)
+
+#### Install Podman
 
 Before continuing make sure there are no updates pending with `sudo dnf update -y && sudo dnf install -y podman` and then reboot with `sudo reboot`. The reboot just makes avoiding permissions / kernel issues easy because that stuff is reread on boot.
 
@@ -61,22 +75,11 @@ Run `podman run hello-world` as your user to test your privileges. If this does 
 
 **WARNING**: If you are SSH'ing to your server, make sure you ssh as a user and **not** root. If you SSH as root and then `su` to user, podman will issue `ERRO[0000] XDG_RUNTIME_DIR directory "/run/user/0" is not owned by the current user`. This happens because the user that originally setup `/run` is root rather than your user.
 
-See [Using Docker](#using-docker) for details on how to use Docker for this project. TODO - need to update this
-
-### Install docker-compose
-
-**WARNING** This can be confusing - `podman-compose` also exists but it **is not** owned by Red Hat. This project **does not** use `podman-compose`.
-
-You will also need to install docker-compose version 2. The code **will not work** with version 1. Instructions for 
-installing docker compose version 2 are [here](https://docs.docker.com/compose/install/other/#on-linux).
-
-Make sure `docker-compose` is executable by your current user. This usually means running `sudo chmod +x <PATH_TO_COMPOSE>`
-
-
-## Building the code
+### Compile Manually
 
 To setup the compilation, create a folder outside of the code directory (e.g. `../build/`) and **from there** call the following example script: 
 ```shell
+TODO - pull this in
 cmake ../SIMULATeQCD/ \
 -DARCHITECTURE="70" \
 -DUSE_GPU_AWARE_MPI=ON \
