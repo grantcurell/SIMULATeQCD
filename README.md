@@ -68,8 +68,8 @@ Run `podman run hello-world` as your user to test your privileges. If this does 
 
 #### Build the Code
 
-1. Update [config.yml](./config.yml) with any settings you would like to use for your build.
-   1. You can run `./simulate_qcd.sh list` to get a list of possible build targets.
+1. Update [config.yml](./podman-build/config.yml) with any settings you would like to use for your build.
+   1. You can run `<where_you_downloaded>/simulate_qcd.sh list` to get a list of possible build targets.
 2. Run `chmod +x ./simulate_qcd.sh && ./simulate_qcd.sh build`
 
 ### Compile Manually
