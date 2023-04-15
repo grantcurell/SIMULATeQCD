@@ -14,6 +14,7 @@ ARG CUDA_VERSION
 ARG ARCHITECTURE
 ARG USE_GPU_AWARE_MPI
 ARG USE_GPU_P2P
+ARG TARGET
 
 # This code is just ensuring that our user exists and is running with the same permissions as the host user.
 # This is usually userid/gid 1000
@@ -53,7 +54,8 @@ COPY parameter /simulateqcd/parameter
 COPY scripts /simulateqcd/scripts
 COPY test_conf /simulateqcd/test_conf
 
-# Copy CUDA Toolkit from the CUDA builder image
+# Copy CUDA Toolkit from the CUDA builder image. We put this later on because the copy is
+# sufficiently large that podman can't cache it so anything after this must rerun every time.
 COPY --from=cuda-builder /usr/local/cuda /usr/local/cuda
 
 # Set the working directory to /app
@@ -64,7 +66,7 @@ RUN nvcc --version
 
 # Build code using cmake
 RUN cmake ../simulateqcd/ -DARCHITECTURE=${ARCHITECTURE} -DUSE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} -DUSE_GPU_P2P=${USE_GPU_P2P}
-RUN make -j ${CORES}
+RUN make -j ${CORES} ${TARGET}
 
 # Set the user to the user we created earlier
 USER ${USERNAME}

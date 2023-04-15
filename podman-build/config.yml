@@ -46,3 +46,6 @@ USE_GPU_P2P: "ON"
 
 # Enable or disable the use of the HIP programming language for AMD GPUs. Options are ON or OFF
 USE_HIP_AMD: OFF 
+
+# Any options you want to add to the cmake command. These will be added to the end of the `cmake line`
+TARGET: GenerateQuenched

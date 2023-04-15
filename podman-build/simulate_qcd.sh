@@ -89,7 +89,7 @@ while [[ $# -gt 0 ]]; do
       echo
       echo "Args:"
       echo "  build       Build SIMULATeQCD from source"
-      echo "  logs        Get the logs for the Red Panda server" # TODO need to setup
+      echo "  list        Lists all the possible build targets"
       echo
       echo "Flags:"
       echo "  --build    (Re-)build the containers from source"
@@ -173,6 +173,35 @@ case $1 in
     podman rm simulateqcd
     ;;
 
+  list)
+
+      # This function captures all the possible build targets from the CMakeLists.txt file
+
+      # Define the regular expression to match lines with format
+      # add_SIMULATeQCD_executable(memManTest src/testing/main_memManTest.cpp)
+      # The capture group ([[:alnum:]_]+) matches one or more alphanumeric characters 
+      # or underscores. The rest is a literal string.
+      regex='add_SIMULATeQCD_executable\(([[:alnum:]_]+)'
+
+      # Find all matching lines in the CMakeLists.txt file
+      matches=$(grep -oE "$regex" $scriptdir/CMakeLists.txt)
+
+      # Extract the capture group from each match and add it to the list
+      list=()
+      while read -r match; do
+        if [[ $match =~ $regex ]]; then
+          list+=("${BASH_REMATCH[1]}")
+        fi
+      done <<< "$matches"
+
+      # Sort the resulting list alphabetically
+      sorted_list=($(echo "${list[@]}" | tr ' ' '\n' | sort))
+
+      # Print the resulting sorted list
+      printf '%s\n' "${sorted_list[@]}"
+
+    ;;
+
   build)
 
       # Enable the podman service for the user if it isn't already on
@@ -216,8 +245,24 @@ case $1 in
           exit 1
       fi
 
-      export BUILDKIT_PROGRESS=plain
-      echo "Running: podman build --tag simulateqcd/simulateqcd:latest --label name=simulateqcd --build-arg CORES=${CORES} --build-arg RHEL_VERSION=${RHEL_VERSION} --build-arg CUDA_VERSION=${CUDA_VERSION} --build-arg USERNAME=${USERNAME} --build-arg GROUPNAME=${GROUPNAME} --build-arg USER_ID=${USER_ID} --build-arg GROUP_ID=${GROUP_ID} -f $scriptdir/Dockerfile"
+      #export BUILDKIT_PROGRESS=plain
+      echo "Running: podman build \
+--tag simulateqcd/simulateqcd:latest \
+--label name=simulateqcd \
+--build-arg CORES=${CORES} \
+--build-arg RHEL_VERSION=${RHEL_VERSION} \
+--build-arg CUDA_VERSION=${CUDA_VERSION} \
+--build-arg USERNAME=${USERNAME} \
+--build-arg GROUPNAME=${GROUPNAME} \
+--build-arg USER_ID=${USER_ID} \
+--build-arg GROUP_ID=${GROUP_ID} \
+--build-arg ARCHITECTURE=${ARCHITECTURE} \
+--build-arg USE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} \
+--build-arg USE_GPU_P2P=${USE_GPU_P2P} \
+--build-arg TARGET=${TARGET} \
+-f $scriptdir/Dockerfile
+$topdir"
+
       podman build \
         --tag simulateqcd/simulateqcd:latest \
         --label name=simulateqcd \
@@ -231,11 +276,12 @@ case $1 in
         --build-arg ARCHITECTURE=${ARCHITECTURE} \
         --build-arg USE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} \
         --build-arg USE_GPU_P2P=${USE_GPU_P2P} \
+        --build-arg TARGET=${TARGET} \
         -f $scriptdir/Dockerfile
         $topdir
 
       # Remove dangling images (images that are not tagged)
-      podman rmi $(podman images -f "dangling=true" -q)
+      #podman rmi $(podman images -f "dangling=true" -q)
 
       # TODO - need to update this
       echo "Checking if the server is running..."
