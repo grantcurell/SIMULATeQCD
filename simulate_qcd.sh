@@ -16,13 +16,6 @@ fi
 
 touch $topdir/podman-build/container-info-simulateqcd.txt 
 
-check_redpanda_is_running() { # TODO - do I need this?
-  if [[ -z $(docker inspect --format '{{.State.Running}}' simulateqcd | grep -i true) ]]; then
-      echo  "It appears that the simulateqcd container is not running. Make sure you have first run 'redpanda setup' before running this command. This command uses 'docker inspect --format '{{.State.Running}}' simulateqcd | grep -i true' to test Redpanda's status."
-      exit 1
-  fi
-}
-
 # This function parses a YAML file and converts it to a Bash script.
 # Parameters:
 #  $1: The path to the YAML file to parse
@@ -90,15 +83,6 @@ while [[ $# -gt 0 ]]; do
       echo "Args:"
       echo "  build       Build SIMULATeQCD from source"
       echo "  list        Lists all the possible build targets"
-      echo
-      echo "Flags:"
-      echo "  --build    (Re-)build the containers from source"
-      echo "  --verbose    Applies to any day commands. Under the hood this will run ansible-playbook with verbose flags."
-      echo "  --debug    Runs the application in debug mode. TODO - add what this does"
-      echo
-      echo
-      echo "Start options:"
-      echo "  --detach|--nodetach   Either detach (default) from docker compose or stay attached and view debug"
       exit 0
       ;;
     --detach)
