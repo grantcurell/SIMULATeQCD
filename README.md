@@ -36,7 +36,7 @@ First download and activate `git-lfs`. The code can then be cloned to your machi
 
 ### Prerequisites
 
-You will need to install []`git-lfs`](https://git-lfs.github.com/) before continuing or you will need to use a git client which natively supports it.
+You will need to install [`git-lfs`](https://git-lfs.github.com/) before continuing or you will need to use a git client which natively supports it.
 
 ### Download SimulateQCD
 
