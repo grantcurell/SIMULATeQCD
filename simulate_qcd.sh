@@ -168,6 +168,9 @@ echo "CUDA_VERSION=$CUDA_VERSION"
 RHEL_VERSION=$RHEL_VERSION
 CUDA_VERSION=$CUDA_VERSION
 
+# Create the build directory
+mkdir -p ${OUTPUT_DIRECTORY}
+
 case $1 in
   rm)
     podman rm simulateqcd
@@ -266,8 +269,8 @@ case $1 in
 --build-arg TARGET=${TARGET} \
 --build-arg ADDITIONAL_CMAKE_OPTIONS=${ADDITIONAL_CMAKE_OPTIONS} \
 --build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
--f $scriptdir/Dockerfile
-$topdir"
+-f $scriptdir/Dockerfile \
+/opt/SIMULATeQCD"
 
       podman build \
         --tag simulateqcd/simulateqcd:latest \
@@ -285,22 +288,25 @@ $topdir"
         --build-arg TARGET=${TARGET} \
         --build-arg ADDITIONAL_CMAKE_OPTIONS=${ADDITIONAL_CMAKE_OPTIONS} \
         --build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
-        -f $scriptdir/Dockerfile
+        -f $scriptdir/Dockerfile \
         /opt/SIMULATeQCD
 
-      # Remove dangling images (images that are not tagged)
-      #podman rmi $(podman images -f "dangling=true" -q)
-
-      # TODO - need to update this
-      echo "Checking if the server is running..."
+      # Run the container with a no-op command to keep it running
+      podman run --name simulateqcd -d simulateqcd/simulateqcd:latest tail -f /dev/null
+      echo "Checking if the container is running..."
 
       if [[ -z $(podman inspect --format '{{.State.Running}}' simulateqcd | grep -i true) ]]; then
-          echo  "It appears that the SIMULATeQCD (simulateqcd) container failed to deploy correctly. Try checking its status with 'podman logs simulateqcd'."
+          echo  "It appears that the SIMULATeQCD (simulateqcd) container failed to deploy correctly. Look at the build output for details."
           exit 1
       fi
 
-      # TODO - need to update this
-      echo "The build has finished and Patches is running as expected!"
+      podman cp simulateqcd:/build ${OUTPUT_DIRECTORY}
+
+      # Remove dangling images (images that are not tagged)
+      echo "Removing dangling images..."
+      podman rmi $(podman images -f "dangling=true" -q)
+
+      echo "The build has finished and your binaries are located in ${OUTPUT_DIRECTORY}/build."
       ;;  
 
   *)

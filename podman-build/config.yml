@@ -45,14 +45,18 @@ USE_GPU_AWARE_MPI: "ON"
 USE_GPU_P2P: "ON"
 
 # Enable or disable the use of the HIP programming language for AMD GPUs. Options are ON or OFF
+# WARNING: This is not currently defined and does not do anything!
 USE_HIP_AMD: "OFF" 
 
 # The build target. If you specify nothing, it will build all targets. You can get a list of possible build
 # targets by running `./simulateqcd list`
-TARGET: 
+TARGET: HaloTest
 
 # These are added to the end of the cmake line. Any other options you would like to add to cmake you can add here
 ADDITIONAL_CMAKE_OPTIONS: 
 
 # These are added to the end of the make line. Any other options you would like to add to make you can add here
 ADDITIONAL_MAKE_OPTIONS:
+
+# The directory you want the build to be copied to after the build completes.
+OUTPUT_DIRECTORY: ./

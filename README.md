@@ -19,6 +19,7 @@ SIMULATeQCD is a multi-GPU Lattice QCD framework that makes it simple and easy f
       - [Using git Command Line](#using-git-command-line)
     - [Compile Using Container (Recommended)](#compile-using-container-recommended)
       - [Install Podman](#install-podman)
+      - [Build the Code](#build-the-code)
     - [Compile Manually](#compile-manually)
   - [Example: Plaquette action computation](#example-plaquette-action-computation)
   - [Documentation](#documentation)
@@ -56,12 +57,17 @@ Run `git clone https://github.com/LatticeQCD/SIMULATeQCD.git`
 ### Compile Using Container (Recommended)
 
 #### Install Podman
-
-Before continuing make sure there are no updates pending with `sudo dnf update -y && sudo dnf install -y podman` and then reboot with `sudo reboot`. The reboot just makes avoiding permissions / kernel issues easy because that stuff is reread on boot.
+Before continuing make sure there are no updates pending with `sudo dnf update -y && sudo dnf install -y podman` and then reboot with `sudo reboot`. The reboot just makes avoiding permissions / kernel issues easy because that stuff is reread on boot. If you have a non RHEL-based OS see [here](https://podman.io/getting-started/installation.html#linux-distributions) for installation instructions.
 
 Run `podman run hello-world` as your user to test your privileges. If this does not run correctly, Patches will not run correctly.
 
 **WARNING**: If you are SSH'ing to your server, make sure you ssh as a user and **not** root. If you SSH as root and then `su` to user, podman will issue `ERRO[0000] XDG_RUNTIME_DIR directory "/run/user/0" is not owned by the current user`. This happens because the user that originally setup `/run` is root rather than your user.
+
+#### Build the Code
+
+1. Update [config.yml](./config.yml) with any settings you would like to use for your build.
+   1. You can run `./simulate_qcd.sh list` to get a list of possible build targets.
+2. Run `simulate_qcd.sh build`
 
 ### Compile Manually
 
