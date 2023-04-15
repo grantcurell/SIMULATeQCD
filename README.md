@@ -57,7 +57,16 @@ Run `git clone https://github.com/LatticeQCD/SIMULATeQCD.git`
 ### Compile Using Container (Recommended)
 
 #### Install Podman
-Before continuing make sure there are no updates pending with `sudo dnf update -y && sudo dnf install -y podman` and then reboot with `sudo reboot`. The reboot just makes avoiding permissions / kernel issues easy because that stuff is reread on boot. If you have a non RHEL-based OS see [here](https://podman.io/getting-started/installation.html#linux-distributions) for installation instructions.
+
+**On RHEL-based (Rocky/CentOS/RHEL) systems**
+
+Before continuing make sure there are no updates pending with `sudo dnf update -y && sudo dnf install -y podman` and then reboot with `sudo reboot`. The reboot just makes avoiding permissions / kernel issues easy because that stuff is reread on boot. 
+
+**Other *NIX Systems**
+
+If you have a non RHEL-based OS see [here](https://podman.io/getting-started/installation.html#linux-distributions) for installation instructions.
+
+------------
 
 Run `podman run hello-world` as your user to test your privileges. If this does not run correctly, Patches will not run correctly.
 
