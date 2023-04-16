@@ -1,6 +1,8 @@
 # Get the CUDA toolkit from the NVIDIA CUDA image
 FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION} as cuda-builder
 
+FROM rocm/rocm-terminal as rocm-builder
+
 # Use the official Rocky Linux image
 FROM rockylinux:${RHEL_VERSION}-minimal
 
@@ -29,17 +31,10 @@ RUN echo "GROUP_ID=${GROUP_ID} GROUPNAME=${GROUPNAME}" \
     && groupadd -g ${GROUP_ID} ${GROUPNAME} \
     && useradd -l -u ${USER_ID} -g ${GROUPNAME} ${USERNAME}
 
-# Set the HIP_PATH environment variable
-ENV HIP_PATH /opt/rocm/hip
-
-# Set the PATH environment variable to include the HIP bin directory
-ENV PATH $HIP_PATH/bin:$PATH
-
 # Install Dependencies
 RUN microdnf update -y \
-    && microdnf install -y cmake gcc-c++ openmpi-devel kernel-devel openmpi \
+    && microdnf install -y cmake gcc-c++ openmpi-devel kernel-devel openmpi libdrm perl \
     && microdnf clean all
-
 
 # Set environment variables for CUDA
 ENV PATH=/usr/lib64/openmpi/bin:$PATH
@@ -47,13 +42,29 @@ ENV PATH=/usr/local/cuda/bin:$PATH
 ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
 
 # Set the environment variables in the user's shell profile
-RUN echo 'export PATH="/usr/lib64/openmpi/bin:$PATH"' >> /home/${USERNAME}/.profile
-RUN echo 'export PATH="/usr/local/cuda/bin/nvcc:${PATH}"' >> /home/${USERNAME}/.profile
-RUN echo 'export LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"' >> /home/${USERNAME}/.profile
+RUN echo 'export PATH="/usr/lib64/openmpi/bin:$PATH"' >> /home/${USERNAME}/.profile && \
+    echo 'export PATH="/usr/local/cuda/bin/nvcc:${PATH}"' >> /home/${USERNAME}/.profile && \
+    echo 'export LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"' >> /home/${USERNAME}/.profile
+
+# Set environment variables for HIP
+ENV PATH="/opt/rocm/bin:/opt/rocm/opencl/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/rocm/lib:${LD_LIBRARY_PATH}"
+ENV HIP_PLATFORM=amd
+ENV HIP_COMPILER=clang
+ENV HIP_RUNTIME=rocclr
+ENV HIP_PATH="/opt/rocm/hip"
+
+# Set the environment variables in the user's shell profile
+RUN echo "export PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:\${PATH}" >> /root/.bashrc && \
+    echo "export LD_LIBRARY_PATH=/opt/rocm/lib:\${LD_LIBRARY_PATH}" >> /root/.bashrc && \
+    echo "export HIP_PLATFORM=amd" >> /root/.bashrc && \
+    echo "export HIP_COMPILER=clang" >> /root/.bashrc && \
+    echo "export HIP_RUNTIME=rocclr" >> /root/.bashrc && \
+    echo "export HIP_PATH=/opt/rocm/hip" >> /root/.bashrc && \
+    echo "echo 'ROCm and HIP installation completed successfully.'" >> /root/.bashrc
 
 # Create simulateqcd directory
-RUN mkdir /simulateqcd
-RUN mkdir /build
+RUN mkdir /simulateqcd && mkdir /build
 
 # Copy source code into the container
 COPY src /simulateqcd/src
@@ -62,26 +73,20 @@ COPY parameter /simulateqcd/parameter
 COPY scripts /simulateqcd/scripts
 COPY test_conf /simulateqcd/test_conf
 
-# Download and run AMDGPU-PRO install script
-RUN curl -sLO https://drivers.amd.com/instrepo/amdgpu-pro-installer-21.50-1234664-ubuntu-20.04.tar.xz \
-    && tar -Jxvf amdgpu-pro-installer-21.50-1234664-ubuntu-20.04.tar.xz \
-    && ./amdgpu-pro-installer-21.50-1234664-ubuntu-20.04/amdgpu-pro-install --opencl=rocm --headless
-
+# Set the working directory to /app
+WORKDIR /build
 
 # Copy CUDA Toolkit from the CUDA builder image. We put this later on because the copy is
 # sufficiently large that podman can't cache it so anything after this must rerun every time.
 COPY --from=cuda-builder /usr/local/cuda /usr/local/cuda
 COPY --from=rocm-builder /opt/rocm /opt/rocm
 
-# Set the working directory to /app
-WORKDIR /build
-
 # Test CUDA installation
 RUN nvcc --version
 
 # Build code using cmake
-RUN cmake ../simulateqcd/ -DARCHITECTURE=${ARCHITECTURE} -DUSE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} -DUSE_GPU_P2P=${USE_GPU_P2P} ${ADDITIONAL_CMAKE_OPTIONS} -DBACKEND=${BACKEND}
-RUN make -j ${CORES} ${TARGET} ${ADDITIONAL_MAKE_OPTIONS}
+RUN cmake ../simulateqcd/ -DARCHITECTURE=${ARCHITECTURE} -DUSE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} -DUSE_GPU_P2P=${USE_GPU_P2P} ${ADDITIONAL_CMAKE_OPTIONS} -DBACKEND=${BACKEND} \
+ && make -j ${CORES} ${TARGET} ${ADDITIONAL_MAKE_OPTIONS}
 
 # Set the user to the user we created earlier
 USER ${USERNAME}
