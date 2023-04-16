@@ -3,6 +3,51 @@ FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION} as cu
 
 FROM rocm/rocm-terminal as rocm-builder
 
+# Use the official Rocky Linux 8.4 image as the base image
+FROM rockylinux/rockylinux:latest as hipcub-builder
+
+# Set environment variables for HIP
+ENV PATH="/opt/rocm/bin:/opt/rocm/opencl/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/rocm/lib:${LD_LIBRARY_PATH}"
+ENV HIP_PLATFORM=amd
+ENV HIP_COMPILER=clang
+ENV HIP_RUNTIME=rocclr
+ENV HIP_PATH="/opt/rocm/hip"
+
+# Set the environment variables in the user's shell profile
+RUN echo "export PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:\${PATH}" >> /root/.bashrc && \
+    echo "export LD_LIBRARY_PATH=/opt/rocm/lib:\${LD_LIBRARY_PATH}" >> /root/.bashrc && \
+    echo "export HIP_PLATFORM=amd" >> /root/.bashrc && \
+    echo "export HIP_COMPILER=clang" >> /root/.bashrc && \
+    echo "export HIP_RUNTIME=rocclr" >> /root/.bashrc && \
+    echo "export HIP_PATH=/opt/rocm/hip" >> /root/.bashrc && \
+    echo "echo 'ROCm and HIP installation completed successfully.'" >> /root/.bashrc
+
+# Install required packages for building Hipcub
+RUN dnf -y install epel-release \
+    && dnf -y update \
+    && dnf -y install cmake make git gcc-c++ \
+    && dnf clean all
+
+# Clone the Hipcub repository
+RUN git clone https://github.com/ROCmSoftwarePlatform/hipCUB.git /opt/hipCUB
+
+# Create a build directory and change into it
+RUN mkdir /opt/hipCUB/build \
+    && cd /opt/hipCUB/build
+
+WORKDIR /opt/hipCUB/build
+
+# Copy over ROCm from the ROCm builder image
+COPY --from=rocm-builder /opt/rocm /opt/rocm
+
+RUN export CXX=hipcc \
+    && cmake ../. \
+    && make -j ${CORES} \
+    && ctest --output-on-failure \
+    && make package \
+    && make install
+
 # Use the official Rocky Linux image
 FROM rockylinux:${RHEL_VERSION}-minimal
 
@@ -78,6 +123,7 @@ WORKDIR /build
 
 # Copy CUDA Toolkit from the CUDA builder image. We put this later on because the copy is
 # sufficiently large that podman can't cache it so anything after this must rerun every time.
+COPY --from=hipcub-builder /opt/rocm/hipcub /opt/rocm/hipcub
 COPY --from=cuda-builder /usr/local/cuda /usr/local/cuda
 COPY --from=rocm-builder /opt/rocm /opt/rocm
 

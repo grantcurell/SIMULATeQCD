@@ -3,6 +3,7 @@
 # Build the source with HIP for Nvidia Platforms. See https://latticeqcd.github.io/SIMULATeQCD/01_gettingStarted/gettingStarted.html#building-source-with-hip-for-nvidia-platforms-experimental
 # Build the source with HIP for AMD Platforms. See https://latticeqcd.github.io/SIMULATeQCD/01_gettingStarted/gettingStarted.html#building-source-with-hip-for-amd-platforms-experimental
 # Note: This automatically sets the CMake variable BACKEND.
+# TODO - ONLY nvidia IS IMPLEMENTED. AMD IS STILL A WORK IN PROGRESS.
 PROFILE: nvidia
 
 # This controls the number of threads that the build will spawn. It is used as
@@ -41,6 +42,7 @@ USE_GPU_P2P: "ON"
 
 # Enable or disable the use of the HIP programming language for AMD GPUs. Options are ON or OFF
 # WARNING: This is not currently defined and does not do anything!
+# TODO - THIS IS NOT YET IMPLEMENTED
 USE_HIP_AMD: "OFF" 
 
 ################################################################################################
@@ -78,7 +80,7 @@ ARCHITECTURE: "70"
 
 # The build target. If you specify nothing, it will build all targets. You can get a list of possible build
 # targets by running `./simulateqcd list`
-TARGET: HaloTest
+TARGET:
 
 # These are added to the end of the cmake line. Any other options you would like to add to cmake you can add here
 ADDITIONAL_CMAKE_OPTIONS: 
