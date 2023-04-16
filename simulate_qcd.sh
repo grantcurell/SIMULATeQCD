@@ -212,31 +212,55 @@ case $1 in
         podman container rm -v $id
       done
 
-      # Check that the CUDA_VERISON is set and valid
-      url="https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/"
-
-      # Get the page content and filter for lines containing "cuda-toolkit"
-      content=$(curl -s "$url" | grep "cuda-toolkit")
-
-      # Parse the content for versions and filter out the ones containing "config"
-      versions=$(echo "$content" | sed -nE 's/.*cuda-toolkit-[0-9]+-[0-9]+-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+).*/\1/p' | grep -v "config" | uniq)
-
-      # Check if CUDA_VERSION is set
-      if [ -z "$CUDA_VERSION" ]; then
-          echo "Please set the CUDA_VERSION environment variable."
+      # Make sure PROFILE is set and valid
+      if [[ "$PROFILE" != "nvidia" && "$PROFILE" != "hip_nvidia" && "$PROFILE" != "hip_amd" ]]; then
+          echo "Invalid value for PROFILE in configuration."
+          echo "Allowed values are: nvidia, hip_nvidia, hip_amd."
           exit 1
       fi
 
-      # Check if the provided version is valid
-      if echo "$versions" | grep -q "^${CUDA_VERSION}-[0-9]\+$"; then
-          echo "The provided CUDA toolkit version ($CUDA_VERSION) is valid."
-      else
-          echo "The provided version ($CUDA_VERSION) is not valid. Please choose a valid version from the list:"
-          echo "$versions" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+/\1/'
-          exit 1
+      # Check to make sure CUDA version is valid if using nvidia or hip_nvidia
+      if [[ "$PROFILE" == "nvidia" || "$PROFILE" == "hip_nvidia" ]]; then
+          # Check that the CUDA_VERISON is set and valid
+          url="https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/"
+
+          # Get the page content and filter for lines containing "cuda-toolkit"
+          content=$(curl -s "$url" | grep "cuda-toolkit")
+
+          # Parse the content for versions and filter out the ones containing "config"
+          versions=$(echo "$content" | sed -nE 's/.*cuda-toolkit-[0-9]+-[0-9]+-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+).*/\1/p' | grep -v "config" | uniq)
+
+          # Check if CUDA_VERSION is set
+          if [ -z "$CUDA_VERSION" ]; then
+              echo "Please set the CUDA_VERSION environment variable."
+              exit 1
+          fi
+
+          # Check if the provided version is valid
+          if echo "$versions" | grep -q "^${CUDA_VERSION}-[0-9]\+$"; then
+              echo "The provided CUDA toolkit version ($CUDA_VERSION) is valid."
+          else
+              echo "The provided version ($CUDA_VERSION) is not valid. Please choose a valid version from the list:"
+              echo "$versions" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+/\1/'
+              exit 1
+          fi
       fi
 
-      #export BUILDKIT_PROGRESS=plain
+      if [[ "$PROFILE" == "hip_nvidia" ]]; then
+          BACKEND="hip_nvidia"
+      fi
+
+      if [[ "$PROFILE" == "hip_amd" ]]; then
+          BACKEND="hip_amd"
+      fi
+
+      if [[ "$PROFILE" == "hip_nvidia" || "$PROFILE" == "hip_amd" ]]; then
+          if [[ "$USE_GPU_P2P" != "OFF" ]]; then
+              echo "Error: USE_GPU_P2P should be set to OFF when using the hip_nvidia or hip_amd profiles."
+              exit 1
+          fi
+      fi
+
       echo "Running: podman build \
 --tag simulateqcd/simulateqcd:latest \
 --label name=simulateqcd \
@@ -253,6 +277,8 @@ case $1 in
 --build-arg TARGET=${TARGET} \
 --build-arg ADDITIONAL_CMAKE_OPTIONS=${ADDITIONAL_CMAKE_OPTIONS} \
 --build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
+--build-arg USE_HIP_AMD=${USE_HIP_AMD} \
+--build-arg BACKEND=${BACKEND} \
 -f $scriptdir/Dockerfile \
 /opt/SIMULATeQCD"
 
@@ -272,6 +298,8 @@ case $1 in
         --build-arg TARGET=${TARGET} \
         --build-arg ADDITIONAL_CMAKE_OPTIONS=${ADDITIONAL_CMAKE_OPTIONS} \
         --build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
+        --build-arg USE_HIP_AMD=${USE_HIP_AMD} \
+        --build-arg BACKEND=${BACKEND} \
         -f $scriptdir/Dockerfile \
         /opt/SIMULATeQCD
 

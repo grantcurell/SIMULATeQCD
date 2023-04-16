@@ -16,7 +16,7 @@ SIMULATeQCD is a multi-GPU Lattice QCD framework that makes it simple and easy f
     - [Download SimulateQCD](#download-simulateqcd)
       - [Manual Download](#manual-download)
       - [Using git Command Line](#using-git-command-line)
-    - [Compile Using Container (Recommended)](#compile-using-container-recommended)
+    - [Compile Using Container](#compile-using-container)
       - [Install Podman](#install-podman)
       - [Build the Code](#build-the-code)
     - [Compile Manually](#compile-manually)
@@ -48,7 +48,7 @@ You will need to install [`git-lfs`](https://git-lfs.github.com/) before continu
 
 Run `git clone https://github.com/LatticeQCD/SIMULATeQCD.git`
 
-### Compile Using Container (Recommended)
+### Compile Using Container
 
 #### Install Podman
 
