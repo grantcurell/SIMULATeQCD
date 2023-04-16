@@ -20,11 +20,16 @@ USE_GPU_AWARE_MPI: "ON"
 # This sets the version of the OS *in the container*. This does not need to match
 # the target computer. The primary reason for changing this is to allow the use
 # of older verisons of the CUDA toolkit. Older toolkits are only available on
-# older operating systems.
-RHEL_VERSION: 9
+# older operating systems. This can be ignored when using the hip_amd profile.
+# You will generally want to leave this at latest. This tells the code to grab
+# the latest version available. You can also set it to RHEL's major version number.
+# Ex: 7, 8, 9.
+RHEL_VERSION: latest
 
-# This is the CUDA version that is used for the build.
-CUDA_VERSION: 12.1.0
+# This is the CUDA version you want to use for the build. See https://developer.nvidia.com/cuda-toolkit-archive
+# for a list of versions. If you set it to latest, the code will check that link for the highest
+# version and use it.
+CUDA_VERSION: latest
 
 # USE_GPU_P2P enables or disables the use of GPU peer-to-peer (P2P) communication when building an
 # application with CUDA. Nvidia's proprietary GPU interconnect is called NVLink. GPU P2P communication

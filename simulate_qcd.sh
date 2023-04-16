@@ -219,22 +219,55 @@ case $1 in
           exit 1
       fi
 
+      # Check if the RHEL_VERSION environment variable is set to "latest" and if it is get the latest version
+      if [[ "${RHEL_VERSION}" == "latest" ]]; then
+          # Set the URL
+          url="https://developer.download.nvidia.com/compute/cuda/repos/"
+
+          # Get the page content and filter for lines containing "rhel"
+          content=$(curl -s "$url" | grep "rhel")
+
+          # Parse the content for version numbers and extract the latest one
+          version=$(echo "$content" | sed -nE 's/.*rhel([0-9]+).*/\1/p' | sort -nr | head -n1)
+
+          # Print the latest version
+          RHEL_VERSION="$version"
+          echo "Using latest RHEL version: $RHEL_VERSION"
+      fi
+
       # Check to make sure CUDA version is valid if using nvidia or hip_nvidia
       if [[ "$PROFILE" == "nvidia" || "$PROFILE" == "hip_nvidia" ]]; then
-          # Check that the CUDA_VERISON is set and valid
-          url="https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/"
 
-          # Get the page content and filter for lines containing "cuda-toolkit"
-          content=$(curl -s "$url" | grep "cuda-toolkit")
+          # Check if CUDA_VERSION is set to latest and if it is grab the latest CUDA version
+          if [[ "$CUDA_VERSION" == "latest" ]]; then
+              # Define the URL for the CUDA Toolkit Archive
+              url="https://developer.nvidia.com/cuda-toolkit-archive"
 
-          # Parse the content for versions and filter out the ones containing "config"
-          versions=$(echo "$content" | sed -nE 's/.*cuda-toolkit-[0-9]+-[0-9]+-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+).*/\1/p' | grep -v "config" | uniq)
+              # Get the page content and filter for lines containing the latest release
+              content=$(curl -s "$url" | grep -oP "Latest Release[\s\S]*?</li>")
+
+              # Get the latest version number by extracting the version number from the filtered content
+              latest_version=$(echo "$content" | grep -oP "CUDA Toolkit \K[0-9]+\.[0-9]+\.[0-9]+")
+
+              echo "Latest CUDA version is $latest_version"
+          else
+              echo "CUDA_VERSION is not set to 'latest', skipping check"
+          fi
 
           # Check if CUDA_VERSION is set
           if [ -z "$CUDA_VERSION" ]; then
               echo "Please set the CUDA_VERSION environment variable."
               exit 1
           fi
+
+          # Check that the CUDA_VERISON is set and valid
+          url="https://developer.download.nvidia.com/compute/cuda/repos/rhel${RHEL_VERSION}/x86_64/"
+
+          # Get the page content and filter for lines containing "cuda-toolkit"
+          content=$(curl -s "$url" | grep "cuda-toolkit")
+
+          # Parse the content for versions and filter out the ones containing "config"
+          versions=$(echo "$content" | sed -nE 's/.*cuda-toolkit-[0-9]+-[0-9]+-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+).*/\1/p' | grep -v "config" | uniq)
 
           # Check if the provided version is valid
           if echo "$versions" | grep -q "^${CUDA_VERSION}-[0-9]\+$"; then
