@@ -247,11 +247,12 @@ case $1 in
               content=$(curl -s "$url" | grep -oP "Latest Release[\s\S]*?</li>")
 
               # Get the latest version number by extracting the version number from the filtered content
-              latest_version=$(echo "$content" | grep -oP "CUDA Toolkit \K[0-9]+\.[0-9]+\.[0-9]+")
+              latest_version=$(echo "$content" | grep -oP "CUDA Toolkit \K[0-9]+\.[0-9]+\.[0-9]+" | head -n1)
 
-              echo "Latest CUDA version is $latest_version"
+              echo "Using latest CUDA version $latest_version"
+              CUDA_VERSION=$latest_version
           else
-              echo "CUDA_VERSION is not set to 'latest', skipping check"
+              echo "CUDA_VERSION is set to ${CUDA_VERSION}"
           fi
 
           # Check if CUDA_VERSION is set
@@ -294,7 +295,49 @@ case $1 in
           fi
       fi
 
-      echo "Running: podman build \
+      if [[ "$PROFILE" == "nvidia" ]]; then
+
+          echo "Running: podman build \
+--tag simulateqcd/simulateqcd:latest \
+--label name=simulateqcd \
+--build-arg CORES=${CORES} \
+--build-arg RHEL_VERSION=${RHEL_VERSION} \
+--build-arg CUDA_VERSION=${CUDA_VERSION} \
+--build-arg USERNAME=${USERNAME} \
+--build-arg GROUPNAME=${GROUPNAME} \
+--build-arg USER_ID=${USER_ID} \
+--build-arg GROUP_ID=${GROUP_ID} \
+--build-arg ARCHITECTURE=${ARCHITECTURE} \
+--build-arg USE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} \
+--build-arg USE_GPU_P2P=${USE_GPU_P2P} \
+--build-arg TARGET=${TARGET} \
+--build-arg ADDITIONAL_CMAKE_OPTIONS=${ADDITIONAL_CMAKE_OPTIONS} \
+--build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
+-f $scriptdir/Dockerfile.cuda \
+/opt/SIMULATeQCD"
+
+          podman build \
+            --tag simulateqcd/simulateqcd:latest \
+            --label name=simulateqcd \
+            --build-arg CORES=${CORES} \
+            --build-arg RHEL_VERSION=${RHEL_VERSION} \
+            --build-arg CUDA_VERSION=${CUDA_VERSION} \
+            --build-arg USERNAME=${USERNAME} \
+            --build-arg GROUPNAME=${GROUPNAME} \
+            --build-arg USER_ID=${USER_ID} \
+            --build-arg GROUP_ID=${GROUP_ID} \
+            --build-arg ARCHITECTURE=${ARCHITECTURE} \
+            --build-arg USE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} \
+            --build-arg USE_GPU_P2P=${USE_GPU_P2P} \
+            --build-arg TARGET=${TARGET} \
+            --build-arg ADDITIONAL_CMAKE_OPTIONS=${ADDITIONAL_CMAKE_OPTIONS} \
+            --build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
+            -f $scriptdir/Dockerfile.cuda \
+            /opt/SIMULATeQCD
+
+      elif [[ "$PROFILE" == "hip_nvidia" ]]; then
+
+          echo "Running: podman build \
 --tag simulateqcd/simulateqcd:latest \
 --label name=simulateqcd \
 --build-arg CORES=${CORES} \
@@ -312,29 +355,34 @@ case $1 in
 --build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
 --build-arg USE_HIP_AMD=${USE_HIP_AMD} \
 --build-arg BACKEND=${BACKEND} \
--f $scriptdir/Dockerfile \
+-f $scriptdir/Dockerfile.nvidia_hip \
 /opt/SIMULATeQCD"
 
-      podman build \
-        --tag simulateqcd/simulateqcd:latest \
-        --label name=simulateqcd \
-        --build-arg CORES=${CORES} \
-        --build-arg RHEL_VERSION=${RHEL_VERSION} \
-        --build-arg CUDA_VERSION=${CUDA_VERSION} \
-        --build-arg USERNAME=${USERNAME} \
-        --build-arg GROUPNAME=${GROUPNAME} \
-        --build-arg USER_ID=${USER_ID} \
-        --build-arg GROUP_ID=${GROUP_ID} \
-        --build-arg ARCHITECTURE=${ARCHITECTURE} \
-        --build-arg USE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} \
-        --build-arg USE_GPU_P2P=${USE_GPU_P2P} \
-        --build-arg TARGET=${TARGET} \
-        --build-arg ADDITIONAL_CMAKE_OPTIONS=${ADDITIONAL_CMAKE_OPTIONS} \
-        --build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
-        --build-arg USE_HIP_AMD=${USE_HIP_AMD} \
-        --build-arg BACKEND=${BACKEND} \
-        -f $scriptdir/Dockerfile \
-        /opt/SIMULATeQCD
+          podman build \
+            --tag simulateqcd/simulateqcd:latest \
+            --label name=simulateqcd \
+            --build-arg CORES=${CORES} \
+            --build-arg RHEL_VERSION=${RHEL_VERSION} \
+            --build-arg CUDA_VERSION=${CUDA_VERSION} \
+            --build-arg USERNAME=${USERNAME} \
+            --build-arg GROUPNAME=${GROUPNAME} \
+            --build-arg USER_ID=${USER_ID} \
+            --build-arg GROUP_ID=${GROUP_ID} \
+            --build-arg ARCHITECTURE=${ARCHITECTURE} \
+            --build-arg USE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} \
+            --build-arg USE_GPU_P2P=${USE_GPU_P2P} \
+            --build-arg TARGET=${TARGET} \
+            --build-arg ADDITIONAL_CMAKE_OPTIONS=${ADDITIONAL_CMAKE_OPTIONS} \
+            --build-arg ADDITIONAL_MAKE_OPTIONS=${ADDITIONAL_MAKE_OPTIONS} \
+            --build-arg USE_HIP_AMD=${USE_HIP_AMD} \
+            --build-arg BACKEND=${BACKEND} \
+            -f $scriptdir/Dockerfile.nvidia_hip \
+            /opt/SIMULATeQCD
+
+      else
+        echo "Invalid PROFILE value: $PROFILE. PROFILE must be set to either 'nvidia' or 'hip_nvidia'"
+        exit 1
+      fi
 
       # Run the container with a no-op command to keep it running
       podman run --name simulateqcd -d simulateqcd/simulateqcd:latest tail -f /dev/null
@@ -349,9 +397,9 @@ case $1 in
 
       # Remove dangling images (images that are not tagged)
       echo "Removing dangling images..."
-      podman rmi $(podman images -f "dangling=true" -q)
+      #podman rmi $(podman images -f "dangling=true" -q)
 
-      echo "The build has finished and your binaries are located in ${OUTPUT_DIRECTORY}/build."
+      echo "The build has finished and your binaries are located in ${OUTPUT_DIRECTORY}build."
       ;;  
 
   *)

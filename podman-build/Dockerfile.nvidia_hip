@@ -1,6 +1,26 @@
 # Get the CUDA toolkit from the NVIDIA CUDA image
 FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-rockylinux${RHEL_VERSION} as cuda-builder
 
+# Update package lists and install dependencies
+# RUN microdnf update -y
+# RUN microdnf install -y wget
+# RUN microdnf install https://repo.radeon.com/amdgpu-install/latest/rhel/9.1/amdgpu-install-5.4.50400-1.el9.noarch.rpm
+
+# Start with Ubuntu 20.04 as base image
+FROM ubuntu:latest AS rocm-builder
+
+# Set the DEBIAN_FRONTEND environment variable to avoid interactive prompts during installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update package lists and install dependencies
+RUN apt-get update -y
+RUN apt-get install -y wget
+RUN wget https://repo.radeon.com/amdgpu-install/5.4/ubuntu/focal/amdgpu-install_5.4.50400-1_all.deb
+RUN apt-get install -y ./amdgpu-install_5.4.50400-1_all.deb
+
+# Install ROCm
+RUN amdgpu-install -y --usecase=hiplibsdk,rocm,dkms
+
 # Use the official Rocky Linux image
 FROM rockylinux:${RHEL_VERSION}-minimal
 
@@ -17,6 +37,7 @@ ARG USE_GPU_P2P
 ARG TARGET
 ARG ADDITIONAL_CMAKE_OPTIONS
 ARG ADDITIONAL_MAKE_OPTIONS
+ARG BACKEND
 
 # This code is just ensuring that our user exists and is running with the same permissions as the host user.
 # This is usually userid/gid 1000
@@ -28,12 +49,17 @@ RUN (getent passwd ${USERNAME} && (echo userdel ${USERNAME}; userdel -f ${USERNA
 RUN groupadd -g ${GROUP_ID} ${GROUPNAME}
 RUN useradd -l -u ${USER_ID} -g ${GROUPNAME} ${USERNAME}
 
-RUN microdnf update -y
-RUN microdnf install -y cmake
-RUN microdnf install -y gcc-c++
-RUN microdnf install -y openmpi-devel
-RUN microdnf install -y kernel-devel
-RUN microdnf install -y openmpi
+# Set the HIP_PATH environment variable
+ENV HIP_PATH /opt/rocm/hip
+
+# Set the PATH environment variable to include the HIP bin directory
+ENV PATH $HIP_PATH/bin:$PATH
+
+# Install Dependencies
+RUN microdnf update -y \
+    && microdnf install -y cmake gcc-c++ openmpi-devel kernel-devel openmpi \
+    && microdnf clean all
+
 
 # Set environment variables for CUDA
 ENV PATH=/usr/lib64/openmpi/bin:$PATH
@@ -59,6 +85,7 @@ COPY test_conf /simulateqcd/test_conf
 # Copy CUDA Toolkit from the CUDA builder image. We put this later on because the copy is
 # sufficiently large that podman can't cache it so anything after this must rerun every time.
 COPY --from=cuda-builder /usr/local/cuda /usr/local/cuda
+COPY --from=rocm-builder /opt/rocm /opt/rocm
 
 # Set the working directory to /app
 WORKDIR /build
@@ -67,7 +94,7 @@ WORKDIR /build
 RUN nvcc --version
 
 # Build code using cmake
-RUN cmake ../simulateqcd/ -DARCHITECTURE=${ARCHITECTURE} -DUSE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} -DUSE_GPU_P2P=${USE_GPU_P2P} ${ADDITIONAL_CMAKE_OPTIONS}
+RUN cmake ../simulateqcd/ -DARCHITECTURE=${ARCHITECTURE} -DUSE_GPU_AWARE_MPI=${USE_GPU_AWARE_MPI} -DUSE_GPU_P2P=${USE_GPU_P2P} ${ADDITIONAL_CMAKE_OPTIONS} -DBACKEND=${BACKEND}
 RUN make -j ${CORES} ${TARGET} ${ADDITIONAL_MAKE_OPTIONS}
 
 # Set the user to the user we created earlier

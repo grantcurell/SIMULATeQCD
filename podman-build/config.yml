@@ -2,7 +2,8 @@
 # nvidia - Builds the source just using CUDA. See https://latticeqcd.github.io/SIMULATeQCD/01_gettingStarted/gettingStarted.html#building-source-with-cuda
 # Build the source with HIP for Nvidia Platforms. See https://latticeqcd.github.io/SIMULATeQCD/01_gettingStarted/gettingStarted.html#building-source-with-hip-for-nvidia-platforms-experimental
 # Build the source with HIP for AMD Platforms. See https://latticeqcd.github.io/SIMULATeQCD/01_gettingStarted/gettingStarted.html#building-source-with-hip-for-amd-platforms-experimental
-PROFILE: nvidia
+# Note: This automatically sets the CMake variable BACKEND.
+PROFILE: hip_nvidia
 
 # This controls the number of threads that the build will spawn. It is used as
 # follows, `make -j ${CORES}` If left undefined, it will use all cores available
@@ -36,7 +37,7 @@ CUDA_VERSION: latest
 # allows for direct data transfer between two GPUs without the need to transfer the data to the host
 # system first. This can result in faster data transfer and reduced CPU overhead, especially for
 # multi-GPU systems. Options are ON or OFF
-USE_GPU_P2P: "ON"
+USE_GPU_P2P: "OFF"
 
 # Enable or disable the use of the HIP programming language for AMD GPUs. Options are ON or OFF
 # WARNING: This is not currently defined and does not do anything!
